@@ -84,6 +84,7 @@ class Base extends Component {
     hideServiceScheduled: false,
     hideServiceFlapping: false,
 
+    serviceGroup: '',
     serviceSortOrder: 'newest',
 
     hideHostPending: false,
@@ -93,6 +94,7 @@ class Base extends Component {
     hideHostScheduled: false,
     hideHostFlapping: false,
 
+    hostGroup: 'public',
     hostSortOrder: 'newest',
 
     language: 'English',
@@ -130,6 +132,7 @@ class Base extends Component {
     'hideServiceScheduled',
     'hideServiceFlapping',
 
+    'serviceGroup',
     'serviceSortOrder',
 
     'hideHostPending',
@@ -139,6 +142,7 @@ class Base extends Component {
     'hideHostScheduled',
     'hideHostFlapping',
 
+    'hostGroup',
     'hostSortOrder',
     
     'versionCheckDays',
@@ -345,11 +349,16 @@ class Base extends Component {
 
   fetchServiceData() {
 
+    let hostgroup;
+    if (this.state.hostGroup) {
+      let hostgroup = '&hostgroup=' + this.state.hostGroup;
+    }
+
     let url;
     if (this.useFakeSampleData) {
       url = './sample-data/servicelist.json';
     } else {
-      url = this.state.baseUrl + 'statusjson.cgi?query=servicelist&details=true';
+      url = this.state.baseUrl + 'statusjson.cgi?query=servicelist&details=true' + hostgroup;
     }
     //console.log('Requesting Service Data: ' + url);
 
@@ -409,11 +418,17 @@ class Base extends Component {
   }
 
   fetchHostData() {
+
+    let hostgroup;
+    if (this.state.hostGroup) {
+      let hostgroup = '&hostgroup=' + this.state.hostGroup;
+    }
+
     let url;
     if (this.useFakeSampleData) {
       url = './sample-data/hostlist.json';
     } else {
-      url = this.state.baseUrl + 'statusjson.cgi?query=hostlist&details=true';
+      url = this.state.baseUrl + 'statusjson.cgi?query=hostlist&details=true' + hostgroup;
     }
 
     $.ajax({url}).done((myJson, textStatus, jqXHR) => {
@@ -471,12 +486,17 @@ class Base extends Component {
 
   fetchAlertData() {
     const starttime = this.state.alertDaysBack * 60 * 60 * 24;
-    
+
+    let hostgroup;
+    if (this.state.hostGroup) {
+      let hostgroup = '&hostgroup=' + this.state.hostGroup;
+    }
+
     let url;
     if (this.useFakeSampleData) {
       url = './sample-data/alertlist.json';
     } else {
-      url = `${this.state.baseUrl}archivejson.cgi?query=alertlist&starttime=-${starttime}&endtime=%2B0`;
+      url = `${this.state.baseUrl}archivejson.cgi?query=alertlist${hostgroup}&starttime=-${starttime}&endtime=%2B0`;
     }
 
     $.ajax({url}).done((myJson, textStatus, jqXHR) => {
@@ -519,7 +539,12 @@ class Base extends Component {
   }
 
   fetchCommentData() {
-    const url = this.state.baseUrl + 'statusjson.cgi?query=commentlist&details=true';
+    let hostgroup;
+    if (this.state.hostGroup) {
+      let hostgroup = '&hostgroup=' + this.state.hostGroup;
+    }
+
+    const url = this.state.baseUrl + 'statusjson.cgi?query=commentlist&details=true' + hostgroup;
 
     $.ajax({url}).done((myJson, textStatus, jqXHR) => {
 
