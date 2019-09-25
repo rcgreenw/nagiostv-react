@@ -27,11 +27,11 @@
 }
 
 .lastOk {
-  font-size: 0.7em;
+  font-size: 0.9em;
 }
 .lastCheck {
   text-align: left;
-  font-size: 0.7em;
+  font-size: 0.9em;
   margin-bottom: 2px
 }
 
@@ -53,6 +53,7 @@
 
 .border-orange {
   border: 1px solid orange;
+  background-color: #332600;
 }
 
 .border-red {
@@ -69,6 +70,10 @@
 }
 
 /* color */
+
+.color-white {
+  color: white;
+}
 
 .color-green {
   color: lime;
@@ -96,8 +101,4 @@
 
 .color-purple {
   color: purple;
-}
-.color-comment {
-  color: #88c1ff;
-  color: #00d8ff; /* blueish */
 }

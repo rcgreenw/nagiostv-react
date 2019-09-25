@@ -199,7 +199,7 @@ class Settings extends Component {
 
           <div className="SettingsScroll">
 
-            {/* new table */}
+            {/* main settings */}
             <table className="SettingsTable">
               <thead>
                 <tr>
@@ -229,14 +229,6 @@ class Settings extends Component {
                   </td>
                 </tr>
                 <tr>
-                  <th>History Days Back:</th>
-                  <td><input type="number" min="1" max="100" value={this.state.alertDaysBack} onChange={this.handleChange('alertDaysBack', 'number')} /></td>
-                </tr>
-                <tr>
-                  <th>History max # items:</th>
-                  <td><input type="number" min="1" max="10000" value={this.state.alertMaxItems} onChange={this.handleChange('alertMaxItems', 'number')} /></td>
-                </tr>
-                <tr>
                   <th>New Version Check:</th>
                   <td>
                     <select value={this.state.versionCheckDays} onChange={this.handleChange('versionCheckDays', 'number')}>
@@ -258,6 +250,53 @@ class Settings extends Component {
               </tbody>
             </table>
 
+            {/* history */}
+            <table className="SettingsTable">
+              <thead>
+                <tr>
+                  <td colSpan="2" className="SettingsTableHeader">History Settings</td>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th>History:</th>
+                  <td>
+                    <select value={this.state.hideHistory} onChange={this.handleChange('hideHistory', 'boolean')}>
+                        <option value={true}>Hide</option>
+                        <option value={false}>Show</option>
+                    </select>
+                  </td>
+                </tr>
+                <tr>
+                  <th>History Days Back:</th>
+                  <td><input type="number" min="1" max="100" value={this.state.alertDaysBack} onChange={this.handleChange('alertDaysBack', 'number')} /></td>
+                </tr>
+                <tr>
+                  <th>History max # items:</th>
+                  <td><input type="number" min="1" max="10000" value={this.state.alertMaxItems} onChange={this.handleChange('alertMaxItems', 'number')} /></td>
+                </tr>
+                <tr>
+                  <th>History Title:</th>
+                  <td>
+                    <select value={this.state.hideHistoryTitle} onChange={this.handleChange('hideHistoryTitle', 'boolean')}>
+                        <option value={true}>Hide</option>
+                        <option value={false}>Show</option>
+                    </select>
+                  </td>
+                </tr>
+                <tr>
+                  <th>History Chart:</th>
+                  <td>
+                    <select value={this.state.hideHistoryChart} onChange={this.handleChange('hideHistoryChart', 'boolean')}>
+                        <option value={true}>Hide</option>
+                        <option value={false}>Show</option>
+                    </select>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+          {/* fun */}
             <table className="SettingsTable">
               <thead>
                 <tr>

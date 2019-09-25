@@ -21,6 +21,9 @@ import moment from 'moment';
 import Cookie from 'js-cookie';
 import $ from 'jquery';
 import _ from 'lodash';
+// icons
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faVolumeUp } from '@fortawesome/free-solid-svg-icons';
 
 class Base extends Component {
 
@@ -30,8 +33,8 @@ class Base extends Component {
   state = {
     showSettings: false,
 
-    currentVersion: 28,
-    currentVersionString: '0.3.7',
+    currentVersion: 33,
+    currentVersionString: '0.4.2',
     latestVersion: 0,
     latestVersionString: '',
     lastVersionCheckTime: 0,
@@ -94,6 +97,10 @@ class Base extends Component {
     hideHostScheduled: false,
     hideHostFlapping: false,
 
+    hideHistory: false,
+    hideHistoryTitle: false,
+    hideHistoryChart: false,
+
     hostGroup: 'public',
     hostSortOrder: 'newest',
 
@@ -142,6 +149,10 @@ class Base extends Component {
     'hideHostScheduled',
     'hideHostFlapping',
 
+    'hideHistory',
+    'hideHistoryTitle',
+    'hideHistoryChart',
+
     'hostGroup',
     'hostSortOrder',
     
@@ -185,16 +196,13 @@ class Base extends Component {
     // Load Remote Settings - then it calls the loadCookie routine
     this.getRemoteSettings();
     
-    //this.toggleSettings(); //open settings box by default (for local development)
-
+    // fetch the initial data immediately
     setTimeout(() => {
       this.fetchHostData();
       this.fetchServiceData();
-      this.fetchAlertData();
+      if (!this.state.hideHistory) { this.fetchAlertData(); }
       // TODO: turn on comments for demo mode at some point
-      if (this.state.isDemoMode === false) {
-        this.fetchCommentData();
-      }
+      if (!this.state.isDemoMode) { this.fetchCommentData(); }
     }, 1000);
 
     if (this.state.isDemoMode === false) {
@@ -206,16 +214,18 @@ class Base extends Component {
       }, this.state.fetchFrequency * 1000);
 
       // we fetch alerts on a slower frequency interval
-      setInterval(() => {
-        this.fetchAlertData();
-      }, this.state.fetchAlertFrequency * 1000);
+      if (!this.state.hideHistory) { 
+        setInterval(() => {
+          this.fetchAlertData();
+        }, this.state.fetchAlertFrequency * 1000);
+      }
 
-      // this is not super clean but I'm going to delay this by 3s to give the setState() in the getCookie()
+      // this is not super clean but I'm going to delay this by 30s to give the setState() in the getCookie()
       // time to complete. It's async so we could have a race condition getting the version check setting
       // to arrive in this.state.versionCheckDays
-      // if someone turns off the version check, it should never check
       setTimeout(() => {
         const versionCheckDays = this.state.versionCheckDays;
+        // if someone turns off the version check, it should never check
         if (versionCheckDays && versionCheckDays > 0) {
           // version check - run once on app boot
           this.versionCheck();
@@ -224,19 +234,28 @@ class Base extends Component {
           // safety check that interval > 1hr
           if (intervalTime !== 0 && intervalTime > (60 * 60 * 1000)) {
             setInterval(() => {
-              this.versionCheck();
+              // inside the interval we check again if the user disabled the check
+              if (this.state.versionCheckDays > 0) {
+                // add a 10s debounce on the version check to try and prevent the runaway
+                _.debounce(this.versionCheck(), 10000);
+              }
             }, intervalTime);
           } else {
             console.log('Invalid versionCheckDays. Not starting check interval.');
           }
         }
-      }, 3000);
+      }, 30000);
     } // if isDemoMode === false
+
+    //this.toggleSettings(); //open settings box by default (for local development)
 
   }
 
   /* ************************************************************************************ */
   /* settings related functions such as fetching settings from server, and loading cookie
+  /* ************************************************************************************ */
+
+  /* ************************************************************************************
   the approach I'm going to take with settings is to first load the settings from the server.
   either the settings load, or they fail. in either case I then check for cookie and apply 
   those over top. so cookie settings will override server settings. There will be a delete
@@ -301,44 +320,65 @@ class Base extends Component {
     this.setState({ isDoneLoading: true });
   }
 
+  lastVersionCheckTime = 0;
+
   versionCheck() {
+    
+    const nowTime = new Date().getTime();
+    const twentyThreeHoursInSeconds = (86400 - 3600) * 1000;
+    
+    // PREVENT extra last version check time with cookie
     // if the last version check was recent then do not check again
     // this prevents version checks if you refresh the UI over and over
     // as is common on TV rotation
-    const lastVersionCheckTime = Cookie.get('lastVersionCheckTime');
-    const nowTime = new Date().getTime();
+    const lastVersionCheckTimeCookie = Cookie.get('lastVersionCheckTime');
 
-    const twentyThreeHoursInSeconds = (86400 - 3600) * 1000;
-    if (lastVersionCheckTime !== 0) {
-      const diff = nowTime - lastVersionCheckTime;
+    if (lastVersionCheckTimeCookie !== 0) {
+      const diff = nowTime - lastVersionCheckTimeCookie;
       if (diff < twentyThreeHoursInSeconds) {
-        console.log('Not performing version check since it was done ' + (diff/1000).toFixed(0) + ' seconds ago');
+        console.log('Not performing version check since it was done ' + (diff/1000).toFixed(0) + ' seconds ago (Cookie check)');
         return;
       }
     }
 
-    const url = 'https://chriscarey.com/software/nagiostv-react/version/json/?version=' + this.state.currentVersionString;
-    fetch(url)
-      .then((response) => {
-        if (response.status === 200) {
-          return response.json();
-        }
-      })
-      .then((myJson) => {
-        console.log(`Latest NagiosTV release is ${myJson.version_string} (r${myJson.version}). You are running ${this.state.currentVersionString} (r${this.state.currentVersion})`);
+    // PREVENT extra last version check time with local variable
+    // If for some reason the cookie check doesn't work
+    if (this.lastVersionCheckTime !== 0) {
+      const diff = nowTime - this.lastVersionCheckTime;
+      if (diff < twentyThreeHoursInSeconds) {
+        console.log('Not performing version check since it was done ' + (diff/1000).toFixed(0) + ' seconds ago (local var check)');
+        return;
+      }
+    }
 
-        this.setState({
-          latestVersion: myJson.version,
-          latestVersionString: myJson.version_string,
-          lastVersionCheckTime: nowTime
-        }, () => {
-          // after state is set, set the cookie
-          Cookie.set('lastVersionCheckTime', nowTime);
-        });
-      })
-      .catch(err => {
-        console.log('There was some error with the version check', err);
+    console.log('Running version check...');
+
+    // Set the last version check time in local variable
+    // I'm setting this one here not in the callback to prevent the rapid fire
+    this.lastVersionCheckTime = nowTime;
+    // Set the last version check in the cookie (for page refresh)
+    Cookie.set('lastVersionCheckTime', nowTime);
+
+    const url = 'https://nagiostv.com/version/nagiostv-react/?version=' + this.state.currentVersionString;
+
+    $.ajax({
+      method: "GET",
+      url,
+      dataType: "json",
+      timeout: 5 * 1000
+    })
+    .done(myJson => {
+      console.log(`Latest NagiosTV release is ${myJson.version_string} (r${myJson.version}). You are running ${this.state.currentVersionString} (r${this.state.currentVersion})`);
+
+      this.setState({
+        latestVersion: myJson.version,
+        latestVersionString: myJson.version_string,
+        lastVersionCheckTime: nowTime
       });
+    })
+    .fail(err => {
+      console.log('There was some error with the version check', err);
+    });
   }
 
   /****************************************************************************
@@ -601,8 +641,8 @@ class Base extends Component {
    *
    ***************************************************************************/
 
-  handleChange = (propName, dataType) => (event) => {
-    // console.log('handleChange Base.jsx');
+  handleCheckboxChange = (propName, dataType) => (event) => {
+    // console.log('handleCheckboxChange Base.jsx');
     // console.log(propName, dataType);
     // console.log('event.target', event.target);
     // console.log('event.target.checked', event.target.checked);
@@ -756,8 +796,7 @@ class Base extends Component {
     }
 
     const settingsLoaded = this.state.isDoneLoading;
-    //const showHistoryChart = window.innerWidth > 500; // don't show the history chart on small screens like iphone
-    const showHistoryChart = true;
+    
     const { language } = this.state;
 
     const howManyHostAndServicesDown = this.state.serviceProblemsArray.length + this.state.hostProblemsArray.length;
@@ -797,6 +836,8 @@ class Base extends Component {
 
         <div className="HeaderArea">
           <div className="ApplicationName">{this.state.titleString}</div>
+          {/*<span style={{ marginLeft: '20px' }} className=""><FontAwesomeIcon icon={faYinYang} spin /> 15s</span>*/}
+          {(this.state.playSoundEffects || this.state.speakItems) && <span style={{ position: 'relative', top: '-1px', marginLeft: '10px', color: '#aaa' }} className=""><FontAwesomeIcon icon={faVolumeUp} /></span>}
         </div>
 
         {/* footer */}
@@ -808,7 +849,7 @@ class Base extends Component {
             <Checkbox
               className="Checkbox warning"
               textClassName="uppercase-first display-inline-block"
-              handleChange={this.handleChange}
+              handleCheckboxChange={this.handleCheckboxChange}
               stateName={'hideFilters'}
               defaultChecked={!this.state.hideFilters}
               howManyText={translate('show filters', language)}
@@ -876,7 +917,7 @@ class Base extends Component {
             </select>
 
             <Checkbox className="Checkbox down uppercase"
-              handleChange={this.handleChange}
+              handleCheckboxChange={this.handleCheckboxChange}
               stateName={'hideHostDown'}
               defaultChecked={!this.state.hideHostDown}
               howMany={howManyHostDown}
@@ -884,7 +925,7 @@ class Base extends Component {
             />
 
             <Checkbox className="Checkbox unreachable uppercase"
-              handleChange={this.handleChange}
+              handleCheckboxChange={this.handleCheckboxChange}
               stateName={'hideHostUnreachable'}
               defaultChecked={!this.state.hideHostUnreachable}
               howMany={howManyHostUnreachable}
@@ -892,7 +933,7 @@ class Base extends Component {
             />
 
             <Checkbox className="Checkbox pending uppercase"
-              handleChange={this.handleChange}
+              handleCheckboxChange={this.handleCheckboxChange}
               stateName={'hideHostPending'}
               defaultChecked={!this.state.hideHostPending}
               howMany={howManyHostPending}
@@ -900,7 +941,7 @@ class Base extends Component {
             />
 
             <Checkbox className="Checkbox acked uppercase"
-              handleChange={this.handleChange}
+              handleCheckboxChange={this.handleCheckboxChange}
               stateName={'hideHostAcked'}
               defaultChecked={!this.state.hideHostAcked}
               howMany={howManyHostAcked}
@@ -908,7 +949,7 @@ class Base extends Component {
             />
 
             <Checkbox className="Checkbox scheduled uppercase"
-              handleChange={this.handleChange}
+              handleCheckboxChange={this.handleCheckboxChange}
               stateName={'hideHostScheduled'}
               defaultChecked={!this.state.hideHostScheduled}
               howMany={howManyHostScheduled}
@@ -916,7 +957,7 @@ class Base extends Component {
             />
 
             <Checkbox className="Checkbox flapping uppercase"
-              handleChange={this.handleChange}
+              handleCheckboxChange={this.handleCheckboxChange}
               stateName={'hideHostFlapping'}
               defaultChecked={!this.state.hideHostFlapping}
               howMany={howManyHostFlapping}
@@ -954,7 +995,7 @@ class Base extends Component {
             {howManyServiceCritical > 0 && <span className="summary-label summary-label-red uppercase">{howManyServiceCritical} {translate('critical', language)}</span>}
             {howManyServiceWarning > 0 && <span className="summary-label summary-label-yellow uppercase">{howManyServiceWarning} {translate('warning', language)}</span>}
             {howManyServicePending > 0 && <span className="summary-label summary-label-gray uppercase">{howManyServicePending} {translate('pending', language)}</span>}
-            {howManyServiceUnknown > 0 && <span className="summary-label summary-label-gray uppercase">{howManyServiceUnknown} {translate('unknown', language)}</span>}
+            {howManyServiceUnknown > 0 && <span className="summary-label summary-label-orange uppercase">{howManyServiceUnknown} {translate('unknown', language)}</span>}
             {howManyServiceAcked > 0 && <span className="summary-label summary-label-green uppercase">{howManyServiceAcked} {translate('acked', language)}</span>}
             {howManyServiceScheduled > 0 && <span className="summary-label summary-label-green uppercase">{howManyServiceScheduled} {translate('scheduled', language)}</span>}
             {howManyServiceFlapping > 0 && <span className="summary-label summary-label-orange uppercase">{howManyServiceFlapping} {translate('flapping', language)}</span>}
@@ -975,7 +1016,7 @@ class Base extends Component {
             </select>
 
             <Checkbox className="Checkbox critical uppercase"
-              handleChange={this.handleChange}
+              handleCheckboxChange={this.handleCheckboxChange}
               stateName={'hideServiceCritical'}
               defaultChecked={!this.state.hideServiceCritical}
               howMany={howManyServiceCritical}
@@ -983,31 +1024,31 @@ class Base extends Component {
             />
 
             <Checkbox className="Checkbox warning uppercase"
-              handleChange={this.handleChange}
+              handleCheckboxChange={this.handleCheckboxChange}
               stateName={'hideServiceWarning'}
               defaultChecked={!this.state.hideServiceWarning}
               howMany={howManyServiceWarning}
               howManyText={translate('warning', language)}
             />
 
-            <Checkbox className="Checkbox pending uppercase"
-              handleChange={this.handleChange}
-              stateName={'hideServicePending'}
-              defaultChecked={!this.state.hideServicePending}
-              howMany={howManyServicePending}
-              howManyText={translate('pending', language)}
-            />
-
             <Checkbox className="Checkbox unknown uppercase"
-              handleChange={this.handleChange}
+              handleCheckboxChange={this.handleCheckboxChange}
               stateName={'hideServiceUnknown'}
               defaultChecked={!this.state.hideServiceUnknown}
               howMany={howManyServiceUnknown}
               howManyText={translate('unknown', language)}
             />
 
+            <Checkbox className="Checkbox pending uppercase"
+              handleCheckboxChange={this.handleCheckboxChange}
+              stateName={'hideServicePending'}
+              defaultChecked={!this.state.hideServicePending}
+              howMany={howManyServicePending}
+              howManyText={translate('pending', language)}
+            />
+
             <Checkbox className="Checkbox acked uppercase"
-              handleChange={this.handleChange}
+              handleCheckboxChange={this.handleCheckboxChange}
               stateName={'hideServiceAcked'}
               defaultChecked={!this.state.hideServiceAcked}
               howMany={howManyServiceAcked}
@@ -1015,7 +1056,7 @@ class Base extends Component {
             />
 
             <Checkbox className="Checkbox scheduled uppercase"
-              handleChange={this.handleChange}
+              handleCheckboxChange={this.handleCheckboxChange}
               stateName={'hideServiceScheduled'}
               defaultChecked={!this.state.hideServiceScheduled}
               howMany={howManyServiceScheduled}
@@ -1023,7 +1064,7 @@ class Base extends Component {
             />
 
             <Checkbox className="Checkbox flapping uppercase"
-              handleChange={this.handleChange}
+              handleCheckboxChange={this.handleCheckboxChange}
               stateName={'hideServiceFlapping'}
               defaultChecked={!this.state.hideServiceFlapping}
               howMany={howManyServiceFlapping}
@@ -1053,30 +1094,34 @@ class Base extends Component {
         
         {/* history (alertlist) */}
 
-        <div className="history-summary color-orange margin-top-10">
-          <span className="service-summary-title">
-          <span className="uppercase-first display-inline-block">{translate('history', language)}</span>: <strong>{this.state.alertlistCount}</strong> {translate('alerts in the past', language)} <strong>{this.state.alertDaysBack}</strong> {translate('days', language)}
-            {this.state.alertlistCount > this.state.alertlist.length && <span className="font-size-0-6"> ({translate('trimming at', language)} {this.state.alertMaxItems})</span>}
-          </span>
-        </div>
+        {!this.state.hideHistory && <div>
 
-        {showHistoryChart && <HistoryChart
-          alertlist={this.state.alertlist}
-          alertDaysBack={this.state.alertDaysBack} 
-          alertlistLastUpdate={this.state.alertlistLastUpdate}
-        />}
+          {!this.state.hideHistoryTitle && <div className="history-summary color-orange margin-top-10">
+            <span className="service-summary-title">
+            <span className="uppercase-first display-inline-block">{translate('history', language)}</span>: <strong>{this.state.alertlistCount}</strong> {translate('alerts in the past', language)} <strong>{this.state.alertDaysBack}</strong> {translate('days', language)}
+              {this.state.alertlistCount > this.state.alertlist.length && <span className="font-size-0-6"> ({translate('trimming at', language)} {this.state.alertMaxItems})</span>}
+            </span>
+          </div>}
 
-        {this.state.alertlistError && <div className="margin-top-10 border-red color-yellow ServiceItemError"><span role="img" aria-label="error">⚠️</span> {this.state.alertlistErrorMessage}</div>}
+          {!this.state.hideHistoryChart && <HistoryChart
+            alertlist={this.state.alertlist}
+            alertDaysBack={this.state.alertDaysBack} 
+            alertlistLastUpdate={this.state.alertlistLastUpdate}
+          />}
 
-        {!this.state.alertlistError && this.state.alertlist.length === 0 && <div className="margin-top-10 color-green AllOkItem">
-          No alerts
+          {this.state.alertlistError && <div className="margin-top-10 border-red color-yellow ServiceItemError"><span role="img" aria-label="error">⚠️</span> {this.state.alertlistErrorMessage}</div>}
+
+          {!this.state.alertlistError && this.state.alertlist.length === 0 && <div className="margin-top-10 color-green AllOkItem">
+            No alerts
+          </div>}
+
+          <AlertItems
+            items={this.state.alertlist}
+            showEmoji={this.state.showEmoji}
+            settings={settingsObject}
+          />
+
         </div>}
-
-        <AlertItems
-          items={this.state.alertlist}
-          showEmoji={this.state.showEmoji}
-          settings={settingsObject}
-        />
 
         <br />
         <br />

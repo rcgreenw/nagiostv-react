@@ -1,6 +1,9 @@
 import React, { Component } from 'react';
 import { translate } from '../../helpers/language';
 import moment from 'moment';
+// icons
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faClock, faCloudShowersHeavy, faCloudSunRain, faCloudSun, faSun } from '@fortawesome/free-solid-svg-icons';
 
 import './QuietFor.css';
 //import { prettyDateTime } from '../helpers/moment.js';
@@ -17,6 +20,9 @@ class QuietFor extends Component {
   }
 
   render() {
+
+    const { language } = this.props;
+
     const quietForText = (date_now, date_future) => {
         //var diff = date_now - date_future;
         //var total_minutes = (diff/(60*1000)).toFixed(0);
@@ -42,44 +48,52 @@ class QuietFor extends Component {
         const seconds = parseInt((delta % 60).toFixed(0), 10);  // in theory the modulus is not required
         
         let foo = '';
-        if (days === 1) { foo += days + ' day '; }
-        if (days > 1) { foo += days + ' days '; }
-        if (hours === 1) { foo += hours + ' hour '; }
-        if (hours > 1) { foo += hours + ' hours '; }
-        if (minutes === 1) { foo += minutes + ' minute '; }
-        if (minutes > 1) { foo += minutes + ' minutes '; }
-        if (seconds === 1) {
-            foo += seconds + ' second';
-        } else {
-            foo += seconds + ' seconds';
+        if (days === 1) { foo += days + ' ' + translate('day', language) + ' '; }
+        if (days > 1) { foo += days + ' ' + translate('days', language) + ' '; }
+        if (hours === 1) { foo += hours + ' ' + translate('hour', language) + ' '; }
+        if (hours > 1) { foo += hours + ' ' + translate('hours', language) + ' '; }
+        if (minutes === 1) { foo += minutes + ' ' + translate('minute', language) + ' '; }
+        if (minutes > 1) { foo += minutes + ' ' + translate('minutes', language) + ' '; }
+        if (days === 0 && hours === 0 && minutes === 0) {
+            if (seconds === 1) {
+                foo += seconds + ' ' + translate('second', language) + '';
+            } else {
+                foo += seconds + ' ' + translate('seconds', language) + '';
+            }
         }
         return foo;
     };
 
-    const stars = (date_now, date_future, first) => {
-        const duration = moment.duration(date_future - date_now );
-        const hours = Math.abs(Math.floor(duration.asHours()));
-        let ret = '';
-        if (hours > 24) { // max out at 24
-            ret += '❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️';
-        } else {
-            for(let i=0;i<hours;i++) {
-                ret += '❤️';
-            };
-        }
-        return ret;
-    };
-
-    const { language } = this.props;
+    const date_future = this.props.prevtime;
+    const date_now = this.props.nowtime;
+    const duration = moment.duration(date_future - date_now );
+    const hours = Math.abs(Math.floor(duration.asHours()));
     
-    // TODO: it would be nice to only render this component when the props change. no need
-    // to recalculate every one since they do not change (except the first)
+    let icon = 'faCloud';
+    let color = 'color-white';
+    if (hours > 12) {
+        icon = <FontAwesomeIcon className="color-green" icon={faSun} />;
+        color = 'color-green';
+    } else if (hours > 6 && hours <= 12) {
+        icon = <FontAwesomeIcon className="color-yellow" icon={faCloudSun} />;
+        color = 'color-yellow';
+    } else if (hours > 1 && hours <= 6) {
+        icon = <FontAwesomeIcon className="color-orange" icon={faCloudSunRain} />;
+        color = 'color-orange';
+    }
+    else {
+        icon = <FontAwesomeIcon className="color-red" icon={faCloudShowersHeavy} />;
+        color = 'color-red';
+    }
+    
     //console.log('quietFor render');
     return (
       <div className="QuietFor">
-        {this.props.showEmoji && <div className="QuietForStars">{stars(this.props.prevtime, this.props.nowtime, this.props.first)}</div>}
-        <span className="QuietForClock">⏱</span>
-        <span className="uppercase-first display-inline-block">{translate('quiet for', language)}</span> {quietForText(this.props.nowtime, this.props.prevtime)}
+        <div className="QuietForIcon">{icon}</div>
+        <span className="QuietForClock"><FontAwesomeIcon className="color-white" icon={faClock} /></span>
+        <span className={`${color}`}>
+            <span className="uppercase-first display-inline-block">{translate('quiet for', language)}</span> {quietForText(this.props.nowtime, this.props.prevtime)}
+        </span>
         {/* - {' '}
          - {prettyDateTime(this.props.nowtime)} {prettyDateTime(this.props.prevtime)}
          - Diff {this.props.nowtime - this.props.prevtime}

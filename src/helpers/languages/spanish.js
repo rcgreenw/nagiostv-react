@@ -14,9 +14,17 @@ export const phrases = {
 	'flapping': 'agitarse',
 	'ok': 'bueno',
 	'warning': 'aviso',
-	'unknown': 'desconocida',
 	'critical': 'crítico',
+	'unknown': 'desconocida',
 	
+	'host up': 'computadora arriba',
+	'host down': 'computadora abajo',
+	'host unreachable': 'computadora inalcanzable',
+	'service ok': 'servicio bueno',
+	'service warning': 'servicio aviso',
+	'service critical': 'servicio crítico',
+	'service unknown': 'servicio desconocida',
+
 	'soft': 'mullido',
 	'hard': 'fuerte',
 
@@ -32,16 +40,7 @@ export const phrases = {
 
 	'history': 'historia',
 	'alerts in the past': 'alarmas en el anterior',
-	'days': 'dias',
 	'trimming at': 'cortante en el',
-
-	'host up': 'computadora arriba',
-	'host down': 'computadora abajo',
-	'host unreachable': 'computadora inalcanzable',
-	'service ok': 'servicio bueno',
-	'service warning': 'servicio aviso',
-	'service critical': 'servicio crítico',
-	'service unknown': 'servicio desconocida',
 
 	'quiet for': 'tranquilo por',
 
@@ -57,6 +56,15 @@ export const phrases = {
 	'oldest first': 'los más viejos primero',
 
 	"show more": "mostrar más",
-	"show less": "mostrar menos"
+	"show less": "mostrar menos",
+
+	"day": "dia",
+	"days": "dias",
+	"hour": "hora",
+	"hours": "horas",
+	"minute": "minuto",
+	"minutes": "minutos",
+	"second": "segundo",
+	"seconds": "segundos"
 
 };

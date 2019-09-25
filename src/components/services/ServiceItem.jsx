@@ -7,6 +7,7 @@ import { playSoundEffectDebounced, speakAudio } from '../../helpers/audio';
 import { translate } from '../../helpers/language';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faYinYang } from '@fortawesome/free-solid-svg-icons';
+import Progress from '../widgets/Progress';
 
 const defaultStyles = {
   overflow: 'hidden',
@@ -71,42 +72,50 @@ class ServiceItem extends Component {
     const e = this.props.serviceItem; // clean this up
     const isSoft = e.state_type === 0;
     const { language } = this.props.settings;
+    const secondsToNextCheck = Math.floor((e.next_check - new Date().getTime()) / 1000);
+    const nowTime = new Date().getTime();
 
     return (
       
-    <div style={{ ...defaultStyles }} className={`ServiceItem`}>
-      <div className={`ServiceItemBorder ${serviceBorderClass(e.status)}`}>
-        <div style={{ float: 'right', textAlign: 'right' }}>
-        {isSoft && <span className="softIcon color-yellow"><FontAwesomeIcon icon={faYinYang} spin /></span>}
-        {1 === 2 && <span>({e.state_type})</span>}
-        <span className="uppercase">{translate(nagiosStateType(e.state_type), language)}</span>{' '}
-        {1 === 2 && <span>({e.status})</span>}
-        <span className={`uppercase ${serviceTextClass(e.status)}`}>{translate(nagiosServiceStatus(e.status), language)}</span>{' '}
-        {e.problem_has_been_acknowledged && <span className="color-green uppercase"> {translate('acked', language)}</span>}
-        {e.scheduled_downtime_depth > 0 && <span className="color-green uppercase"> {translate('scheduled', language)}</span>}
-        {e.is_flapping && <span className="color-orange uppercase"> {translate('flapping', language)}</span>}
-        <div className="lastOk"><span>{translate('Last OK', language)}</span> {formatDateTimeAgoColor(e.last_time_ok)} {translate('ago', language)}</div>
-      </div>
+      <div style={{ ...defaultStyles }} className={`ServiceItem`}>
+        <div className={`ServiceItemBorder ${serviceBorderClass(e.status)}`}>
+          <div style={{ float: 'right', textAlign: 'right' }}>
+            {isSoft && <span className="softIcon color-yellow"><FontAwesomeIcon icon={faYinYang} spin /></span>}
+            {1 === 2 && <span>({e.state_type})</span>}
+            <span className="uppercase">{translate(nagiosStateType(e.state_type), language)}</span>{' '}
+            {1 === 2 && <span>({e.status})</span>}
+            <span className={`uppercase ${serviceTextClass(e.status)}`}>{translate(nagiosServiceStatus(e.status), language)}</span>{' '}
+            {e.problem_has_been_acknowledged && <span className="color-green uppercase"> {translate('acked', language)}</span>}
+            {e.scheduled_downtime_depth > 0 && <span className="color-green uppercase"> {translate('scheduled', language)}</span>}
+            {e.is_flapping && <span className="color-orange uppercase"> {translate('flapping', language)}</span>}
+            <div className="lastOk"><span>{translate('Last OK', language)}</span> {formatDateTimeAgoColor(e.last_time_ok)} {translate('ago', language)}</div>
+          
+          </div>
 
-      <div style={{ textAlign: 'left' }}>
-        <strong>{e.host_name}</strong>{' - '}
-        <span className={serviceTextClass(e.status)}>
-          <span className="color-orange">{e.description}</span>{' - '}
-          {e.plugin_output}
-        </span>
-      </div>
+          <div style={{ textAlign: 'left' }}>
+            <strong>{e.host_name}</strong>{' - '}
+            <span className={serviceTextClass(e.status)}>
+              <span className="color-orange">{e.description}</span>{' - '}
+              {e.plugin_output}
+            </span>
+          </div>
 
-      <div className="lastCheck">
-        {/*{translate('Last check was', language)}: <span className="color-peach">{formatDateTimeAgo(e.last_check)}</span> {translate('ago', language)}{' - '}*/}
-        {translate('Next check in', language)}: <span className="color-peach">{formatDateTime(e.next_check)}</span>
-      </div>
+          <div className="lastCheck">
+            {/*{translate('Last check was', language)}: <span className="color-peach">{formatDateTimeAgo(e.last_check)}</span> {translate('ago', language)}{' - '}*/}
+            {translate('Next check in', language)}:
+            {(e.next_check > nowTime) && <span className="color-peach"> {formatDateTime(e.next_check)}</span>}
+            {(e.next_check <= nowTime) && <span className="checking-now"> Checking now...</span>}
+          </div>
 
-      {this.props.comment && <span style={{ textAlign: 'left', fontSize: '1em' }}>
-        Comment: <span className="color-comment">({this.props.comment_author}): {formatDateTimeAgo(this.props.comment_entry_time)} ago - {this.props.comment}</span>
-      </span>}
+          {this.props.comment && <div className="comment">
+            Comment: <span className="comment-color">({this.props.comment_author}): {formatDateTimeAgo(this.props.comment_entry_time)} ago - {this.props.comment}</span>
+          </div>}
+
+          <Progress seconds={secondsToNextCheck} color={serviceTextClass(e.status)}></Progress>
+        
+        </div>
 
       </div>
-    </div>
     );
   }
 }

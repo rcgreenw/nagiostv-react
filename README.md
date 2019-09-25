@@ -1,20 +1,20 @@
 # NagiosTV
 
-Compatible with Nagios Core 4
+Compatible with Nagios Core 4 and Nagios XI
 
 NagiosTV is a user interface (UI) for the Nagios monitoring system https://www.nagios.org
 
-This user interface is designed to be viewed on a TV, phone, or desktop to quickly see if all your services are up or down. This is not meant to be a replacement for the entire Nagios web interface, but a way to just look at the “what’s down?” part.
+This user interface is designed to be viewed on a TV, phone, or desktop to quickly see if all your services are up or down. This is not meant to be a replacement for the entire Nagios web interface, but a way to just look at the “what's down?” part.
 
 Some of the features:
 
-- Native language support - English and Spanish so far (easy to add new languages)
+- Multi language support - English, Spanish and French so far
 - New items slide in and out of place with smooth animations which looks really cool when things are happening.
 - Sorting - Ability to order items newest or oldest first
 - Filters - so you can hide ACKED or SCHEDULED or UNKNOWN or FLAPPING states
 - Last OK value goes from green, to yellow, to red - based on how long the item has been down
 
-NagiosTV also has some goofy addons:
+NagiosTV also has some fun addons:
 
 - Sound effects for state changes
 - Speak the state changes
@@ -39,17 +39,17 @@ Installing NagiosTV
 -------------
 - Download the latest NagiosTV tar.gz release from https://github.com/chriscareycode/nagiostv-react/releases
 ```console
-$ wget https://github.com/chriscareycode/nagiostv-react/releases/download/v0.3.7/nagiostv-0.3.7.tar.gz
+$ wget https://github.com/chriscareycode/nagiostv-react/releases/download/v0.4.2/nagiostv-0.4.2.tar.gz
 ```
 - Extract the NagiosTV release using tar. This will create a nagiostv/ folder.
 ```console
-$ tar xvfz nagiostv-0.3.7.tar.gz
+$ tar xvfz nagiostv-0.4.2.tar.gz
 ```
-- We're going to host the NagiosTV folder from the built-in Nagios web ui. Copy/Move the nagiostv/ folder into your Nagios web ui folder. In my case the Nagios web ui folder is at /usr/local/nagios/share/ but your Nagios install may have this at a different location such as /usr/nagios/share/
+- We're going to host the NagiosTV folder from the built-in Nagios web ui. Copy/Move the nagiostv/ folder into your Nagios web ui folder. For Nagios Core 4 the Nagios web ui folder might be at `/usr/local/nagios/share/` or `/usr/nagios/share/`. Nagios XI might be at `/var/www/html`.
 ```console
 $ sudo mv nagiostv /usr/local/nagios/share/
 ```
-- Load the app in your web browser! If your built-in Nagios web ui is at http://my-server/nagios/ then NagiosTV should be available at http://my-server/nagios/nagiostv/
+- Load the app in your web browser! If your built-in Nagios web ui is at `http://my-server/nagios/` then NagiosTV should be available at `http://my-server/nagios/nagiostv/`
 - Since nagiostv/ is a subfolder in your Nagios web ui, it will share the same authentication as the built-in Nagios web ui.
 
 Preparing the client settings file (optional)
@@ -62,16 +62,27 @@ $ sudo touch client-settings.json
 $ sudo chmod 777 client-settings.json 
 ```
 
+Then inside the application, open Settings, and read more instructions there.
+
 Upgrading
 ------------
 Grab the latest release from here: https://github.com/chriscareycode/nagiostv-react/releases
 
 Then pretty much the same process as above. Download and overwrite the nagiostv folder with the new version.
+Remember your web ui destination folder `/usr/local/nagios/share/nagiostv/` may vary depending on your Nagios install.
 You can do it on the box with:
 ```console
-$ wget https://github.com/chriscareycode/nagiostv-react/releases/download/v0.3.7/nagiostv-0.3.7.tar.gz
-$ tar xvfz nagiostv-0.3.7.tar.gz
+$ wget https://github.com/chriscareycode/nagiostv-react/releases/download/v0.4.2/nagiostv-0.4.2.tar.gz
+$ tar xvfz nagiostv-0.4.2.tar.gz
 $ sudo cp -r nagiostv/* /usr/local/nagios/share/nagiostv/
+```
+
+AutoUpdate script
+-------------
+I'm now including a autoupdate script which can be used to upgrade or downgrade to any version easily. 
+To update this way, go into your nagiostv/ folder and run this command for more instructions:
+```
+$ sh autoupdate.sh
 ```
 
 Development Requirements
@@ -99,6 +110,8 @@ have authentication enabled. You will need to either modify
 your Apache install to add CORS headers there, or to run a simple Node.js server or Apache config that will proxy the request and add the CORS headers and auth. 
 Reach out to me if you want help here, I will add instructions and sample code for this at some point.
 
+You can also enable "Demo Mode" by changing the URL to `http://localhost:3000/?demo=true`
+
 Development - Committing your changes to this project
 ------------
 - Fork the project
@@ -108,8 +121,8 @@ Development - Committing your changes to this project
 
 TODO
 ------------
-- Autoupdate script
 - Clean up the "save settings to server" feature, and settings screen
+- Fix settings screen to work on mobile (cant scroll right now)
 - Add a Node.js proxy server for local development, and instructions how to use it
 
 History
