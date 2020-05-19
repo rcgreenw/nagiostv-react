@@ -1,7 +1,12 @@
 import React, { Component } from 'react';
 import { translate } from '../../helpers/language';
-import ReactCSSTransitionGroup from 'react-addons-css-transition-group';
+import { TransitionGroup, CSSTransition } from 'react-transition-group';
 import ServiceItem from './ServiceItem';
+
+// icons
+//import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+//import { faSun } from '@fortawesome/free-solid-svg-icons';
+
 // css
 import './ServiceItems.css';
 
@@ -34,6 +39,9 @@ class ServiceItems extends Component {
       if (this.props.settings.hideServiceFlapping) {
         if (item.is_flapping) { return false; }
       }
+      if (this.props.settings.hideServiceSoft) {
+        if (item.state_type === 0) { return false; }
+      }
       return true;
     });
 
@@ -44,21 +52,18 @@ class ServiceItems extends Component {
     return (
       <div className="ServiceItems">
 
-        <div className={`all-ok-item ${this.props.serviceProblemsArray.length === 0 ? 'visible' : 'hidden'}`}>
+        {!this.props.servicelistError && <div className={`all-ok-item ${this.props.serviceProblemsArray.length === 0 ? 'visible' : 'hidden'}`}>
           <span style={{ margin: '5px 10px' }} className="margin-left-10 display-inline-block color-green">{translate('All', language)} {this.props.howManyServices} {translate('services are OK', language)}</span>{' '}
-        </div>
+        </div>}
 
         <div className={`some-down-items ${showSomeDownItems ? 'visible' : 'hidden'}`}>
           <div>
-            <span className="display-inline-block color-green" style={{ marginRight: '10px' }}>{this.props.howManyServices - this.props.serviceProblemsArray.length} {translate('services are OK', language)}</span>{' '}
+            <span className="display-inline-block color-green" style={{ marginRight: '10px' }}>{this.props.howManyServices - this.props.serviceProblemsArray.length} of {this.props.howManyServices} {translate('services are OK', language)}</span>{' '}
             <span className="some-down-hidden-text">({howManyHidden} hidden)</span>
           </div>
         </div>
 
-        <ReactCSSTransitionGroup
-          transitionName="example"
-          transitionEnterTimeout={500}
-          transitionLeaveTimeout={500}>
+        <TransitionGroup>
 
           {filteredServiceProblemsArray.map((e, i) => {
             //console.log('ServiceItem item');
@@ -78,18 +83,25 @@ class ServiceItems extends Component {
             });
 
             return (
-              <ServiceItem
+
+              <CSSTransition
                 key={e.host_name + '-' + e.description}
-                settings={this.props.settings}
-                serviceItem={e}
-                comment={comment}
-                comment_author={comment_author}
-                comment_entry_time={comment_entry_time}
-              />
+                classNames="example"
+                timeout={{ enter: 500, exit: 500 }}
+              >
+                <ServiceItem
+                  settings={this.props.settings}
+                  serviceItem={e}
+                  comment={comment}
+                  comment_author={comment_author}
+                  comment_entry_time={comment_entry_time}
+                />
+              </CSSTransition>
+              
             );
             
           })}
-        </ReactCSSTransitionGroup>
+        </TransitionGroup>
       </div>
     );
   }

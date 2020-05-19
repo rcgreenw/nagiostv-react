@@ -1,7 +1,11 @@
 import React, { Component } from 'react';
 import { translate } from '../../helpers/language';
-import ReactCSSTransitionGroup from 'react-addons-css-transition-group';
+import { TransitionGroup, CSSTransition } from 'react-transition-group';
 import HostItem from './HostItem';
+
+// icons
+//import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+//import { faSun } from '@fortawesome/free-solid-svg-icons';
 
 // css
 import './HostItems.css';
@@ -32,6 +36,9 @@ class HostItems extends Component {
       if (this.props.settings.hideHostFlapping) {
         if (item.is_flapping) { return false; }
       }
+      if (this.props.settings.hideHostSoft) {
+        if (item.state_type === 0) { return false; }
+      }
       return true;
     });
 
@@ -40,23 +47,20 @@ class HostItems extends Component {
     const { language } = this.props.settings;
 
     return (
-      <div className="ServiceItems">
+      <div className="HostItems ServiceItems">
 
-        <div className={`all-ok-item ${this.props.hostProblemsArray.length === 0 ? 'visible' : 'hidden'}`}>
+        {!this.props.hostlistError && <div className={`all-ok-item ${this.props.hostProblemsArray.length === 0 ? 'visible' : 'hidden'}`}>
           <span style={{ margin: '5px 10px' }} className="margin-left-10 display-inline-block color-green">{translate('All', language)} {this.props.howManyHosts} {translate('hosts are UP', language)}</span>{' '}
-        </div>
+        </div>}
 
         <div className={`some-down-items ${showSomeDownItems ? 'visible' : 'hidden'}`}>
           <div>
-            <span className="display-inline-block color-green" style={{ marginRight: '10px' }}>{this.props.howManyHosts - this.props.hostProblemsArray.length} {translate('hosts are UP', language)}</span>{' '}
+            <span className="display-inline-block color-green" style={{ marginRight: '10px' }}>{this.props.howManyHosts - this.props.hostProblemsArray.length} of {this.props.howManyHosts} {translate('hosts are UP', language)}</span>{' '}
             <span className="some-down-hidden-text">({howManyHidden} hidden)</span>
           </div>
         </div>
 
-        <ReactCSSTransitionGroup
-          transitionName="example"
-          transitionEnterTimeout={500}
-          transitionLeaveTimeout={500}>
+        <TransitionGroup>
           {filteredHostProblemsArray.map((e, i) => {
             //console.log('HostItem item');
             //console.log(e, i);
@@ -75,18 +79,24 @@ class HostItems extends Component {
             });
 
             return (
-              <HostItem
-                key={e.name}
-                settings={this.props.settings}
-                hostItem={e}
-                comment={comment}
-                comment_author={comment_author}
-                comment_entry_time={comment_entry_time}
-              />
+              <CSSTransition
+                key={`host-${e.name}`}
+                classNames="example"
+                timeout={{ enter: 500, exit: 500 }}
+                unmountOnExit
+              >
+                <HostItem
+                  settings={this.props.settings}
+                  hostItem={e}
+                  comment={comment}
+                  comment_author={comment_author}
+                  comment_entry_time={comment_entry_time}
+                />
+              </CSSTransition>
             );
             
           })}
-        </ReactCSSTransitionGroup>
+        </TransitionGroup>
       </div>
     );
   }

@@ -3,19 +3,6 @@
   opacity: 0.8;
 }
 
-.AlertItem {
-  background-color: #222;
-  border: 0px solid #9c9c9c;
-  font-size: 0.9em;
-  padding: 4px;
-  border-radius: 5px;
-  margin-bottom: 5px;
-
-  overflow: hidden;
-  background-color: #111;
-  color: white;
-  justify-content: center;
-}
 .ShowMoreArea {
   margin-top: 20px;
   margin-bottom: 20px;

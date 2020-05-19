@@ -49,73 +49,103 @@ input[type=text] {
   top: 0;
   left: 0;
   right: 0;
-  min-height: 40px;
+  min-height: 50px;
   z-index: 10;
-  background-color: rgba(20,20,20,0.8);
-  border-bottom: 1px solid #333;
-  font-size: 1.1em;
-}
-.HeaderArea > div {
-  margin: 10px 0 10px 15px;
+  background-color: #222;
+  border-bottom: 0px solid #333;
+  
 }
 
-.ApplicationName {
-  font-size: 1.3em;
+.HeaderArea > div {
+  /*margin: 10px 0 10px 15px;*/
+}
+
+/*
+.HeaderArea > .header-corner-area {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: #363644;
+  height: 50px;
+  width: 50px;
+  text-align: center;
+}
+
+.HeaderArea > .header-corner-area > svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.HeaderArea > .header-corner-area > svg.header-corner-area-icon {
+  cursor: pointer;
+}
+
+*/
+
+.HeaderArea > .header-right-float {
+  position: absolute;
+  top: 0;
+  right:  0px;
+  height: 50px;
+  vertical-align: top;
+}
+
+.header-application-name {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 15px;
   margin-right: 10px;
   display: inline-block;
+  font-size: 1.2em;
+  color: #ddd;
 }
 
-/* Footer */
-
-.FooterArea {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  min-height: 35px;
-  z-index: 12;
-  background-color: rgba(20,20,20,0.8);
-  border-top: 1px solid #333;
-  text-align: center;
-  font-size: 1.0em;
-}
-.FooterArea > div {
-  margin: 10px;
-  line-height: 1.3em;
-}
-.FooterAreaLeft {
-  position: absolute;
-  left: 0;
-  bottom: 0px;
-}
-.FooterAreaRight {
-  position: absolute;
-  right: 40px;
-  bottom: 0px;
+.sound-icon {
+  display: inline-block;
+  vertical-align: top;
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #aaa;
+  margin-right: 15px;
 }
 
 
-/* not sure why body doesnt influence this FooterArea font size, maybe because its float? */
+
+/* https://www.stephen.io/mediaqueries/ */
+
+/* iPhone 10 */
+@media only screen 
+and (max-width: 1768px) {
+  
+}
+
+@media only screen 
+  and (min-device-width: 320px) 
+  and (max-device-width: 480px)
+  and (-webkit-min-device-pixel-ratio: 2) {
+
+    .NavBottomBar svg {
+      font-size: 1.7em !important;
+    }
+}
+
 @media only screen and (max-device-width: 480px) {
-  .FooterArea {
-    font-size: 0.9em;
-  }
-  .FooterAreaMiddleUpdate {
-    display: none !important;
-  }
+   
 }
 
 @media only screen 
     and (device-width : 375px) 
     and (device-height : 812px) 
     and (-webkit-device-pixel-ratio : 3) {
+  
+}
 
-  .FooterArea {
-    font-size: 0.9em;
-  }
-  .FooterAreaMiddleUpdate {
-    display: none !important;
-  }
+.main-content {
+  margin-left: 0px;
 }
 
 .SettingsButtonDiv {
@@ -137,20 +167,23 @@ input[type=text] {
 .service-summary {
   margin-top: 10px;
   margin-bottom: 10px;
-  font-size: 1.1em;
   clear: both;
   /*overflow: hidden;*/
+  
 }
 .service-summary-title {
-  font-size: 1.3em;
+  font-size: 1.2em;
+  margin-right: 8px;
   margin-bottom: 5px;
+  color: #bbb;
 }
 
 /* all ok */
 
 .all-ok-item {
+  position: relative;
   border: 1px solid #004c00;
-  background-color: #111;
+  background-color: #001d00;
   font-size: 1.5em;
   border-radius: 5px;
   overflow: hidden;
@@ -169,8 +202,9 @@ input[type=text] {
 /* these some-down-items live inside HostItems and ServiceItems */
 /* probably should move to its own component */
 .some-down-items {
+  position: relative;
   border: 1px solid #004c00;
-  background-color: #111;
+  background-color: #001d00;
   font-size: 1.5em;
   border-radius: 5px;
   overflow: hidden;
@@ -193,120 +227,6 @@ input[type=text] {
   color: #aaa;
 }
 
-/* history */
-
-.history-summary {
-  margin-top: 20px;
-}
-
-/**/
-
-.service-hide-problems {
-  margin-top: 8px;
-  line-height: 30px;
-}
-.service-hide-problems select {
-  background-color: #353535;
-  color: white;
-  font-size: 0.7em;
-  white-space: nowrap;
-  opacity: 0.8;
-}
-.service-hide-problems label {
-  border: 1px solid gray;
-  border-radius: 4px;
-  padding: 3px 7px;
-  background-color: rgba(250, 250, 250, 0.3);
-  font-size: 0.7em;
-  opacity: 0.8;
-}
-.service-hide-problems > label > span {
-  /*white-space: nowrap;*/
-}
-.service-hide-problems > label > input[type=checkbox] {
-  margin-left: 3px;
-  margin-right: 6px;
-  font-size: 1em;
-  position: relative;
-  top: -1px;
-}
-.service-hide-problems label.warning {
-  border: 0px solid yellow;
-  background-color: #585804;
-  color: yellow;
-}
-.service-hide-problems label.unknown {
-  border: 0px solid gray;
-  background-color: rgba(255, 177, 2, 0.3);
-}
-.service-hide-problems label.critical {
-  border: 0px solid red;
-  background-color: rgba(255, 2, 2, 0.3);
-}
-.service-hide-problems label.acked {
-  border: 0px solid green;
-  background-color: rgba(0, 253, 43, 0.3);
-}
-.service-hide-problems label.scheduled {
-  border: 0px solid green;
-  background-color: rgba(0, 253, 43, 0.3);
-}
-.service-hide-problems label.flapping {
-  border: 0px solid gray;
-  background-color: rgba(255, 177, 2, 0.3);
-}
-
-/* host */
-
-.service-hide-problems label.down {
-  border: 0px solid red;
-  background-color: rgba(255, 2, 2, 0.3);
-}
-.service-hide-problems label.unreachable {
-  border: 0px solid red;
-  background-color: rgba(255, 2, 2, 0.3);
-}
-.service-hide-problems label.pending {
-  border: 0px solid gray;
-  background-color: rgba(250, 250, 250, 0.3);
-}
-
-/* summary-label */
-
-.summary-label {
-  padding: 3px 5px;
-  border-radius: 4px;
-  font-size: 0.5em;
-  position: relative;
-  top: -2px;
-  margin-left: 2px;
-  margin-right: 8px;
-}
-.summary-label-red {
-  border: 1px solid red;
-  background-color: rgba(255, 2, 2, 0.3);
-  color: orange;
-}
-.summary-label-orange {
-  border: 1px solid orange;
-  background-color: rgba(255, 177, 2, 0.3);
-  color: orange;
-}
-.summary-label-yellow {
-  border: 1px solid yellow;
-  background-color: #585804;
-  color: yellow;
-}
-.summary-label-green {
-  border: 1px solid green;
-  background-color: rgba(0, 253, 43, 0.3);
-  color: orange;
-}
-.summary-label-gray {
-  border: 1px solid gray;
-  background-color: rgba(181, 181, 181, 0.3);
-  color: orange;
-}
 
 /* fun stuff */
 
@@ -320,19 +240,19 @@ input[type=text] {
 /* more footer */
 
 .update-available {
-  background-color: yellow;
-  color: black;
+  
+
   font-weight: bold;
   padding: 1px 8px;
   border-radius: 5px;
   margin-left: 5px;
 }
 .update-available a {
-  color: black;
-  text-decoration: none;
+  color: yellow;
+  text-decoration: underline;
 }
 .update-available a:hover {
-  color: black;
+  color: yellow;
   text-decoration: underline;
 }
 
@@ -351,4 +271,10 @@ input[type=text] {
 }
 .font-size-0-8 {
   font-size: 0.8em;
+}
+button {
+  cursor: pointer;
+}
+.align-right {
+  text-align: right;
 }

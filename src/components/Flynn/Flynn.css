@@ -1,8 +1,13 @@
+.flynn-wrap {
+  display: inline-block;
+  margin-top: 5px;
+  margin-right: 15px;
+}
 .flynn {
   /*background-image: url('/flynn/flynn.png');*/
   height: 64px;
   width: 48px;
-  display: inline-block;
+  
   /*transform: scale(1);*/
   transform-origin: 100% 0%;
   cursor: pointer;

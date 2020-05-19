@@ -6,7 +6,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClock, faCloudShowersHeavy, faCloudSunRain, faCloudSun, faSun } from '@fortawesome/free-solid-svg-icons';
 
 import './QuietFor.css';
-//import { prettyDateTime } from '../helpers/moment.js';
 
 class QuietFor extends Component {
 
@@ -80,24 +79,19 @@ class QuietFor extends Component {
     } else if (hours > 1 && hours <= 6) {
         icon = <FontAwesomeIcon className="color-orange" icon={faCloudSunRain} />;
         color = 'color-orange';
-    }
-    else {
+    } else {
         icon = <FontAwesomeIcon className="color-red" icon={faCloudShowersHeavy} />;
         color = 'color-red';
     }
     
     //console.log('quietFor render');
     return (
-      <div className="QuietFor">
+      <div className={`QuietFor ${color}`}>
         <div className="QuietForIcon">{icon}</div>
         <span className="QuietForClock"><FontAwesomeIcon className="color-white" icon={faClock} /></span>
         <span className={`${color}`}>
             <span className="uppercase-first display-inline-block">{translate('quiet for', language)}</span> {quietForText(this.props.nowtime, this.props.prevtime)}
         </span>
-        {/* - {' '}
-         - {prettyDateTime(this.props.nowtime)} {prettyDateTime(this.props.prevtime)}
-         - Diff {this.props.nowtime - this.props.prevtime}
-        */}
       </div>
     );
   }

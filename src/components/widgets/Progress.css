@@ -6,7 +6,7 @@
 .Progress .progress {
 	border: 0px solid orange;
 	width: 100%;
-	height: 6px;
+	height: 4px;
 	position: absolute;
 	bottom: 0px;
 	left: 0;
@@ -16,7 +16,7 @@
 
 .Progress .progress-bar {
 	border: 0px solid orange;
-	height: 6px;
+	height: 4px;
 	position: absolute;
 	bottom: 0px;
 	left: 0;
@@ -28,6 +28,9 @@
 
 .Progress .progress-bar.color-yellow {
 	background-color: yellow;
+}
+.Progress .progress-bar.color-orange {
+	background-color: orange;
 }
 .Progress .progress-bar.color-red {
 	background-color: pink;

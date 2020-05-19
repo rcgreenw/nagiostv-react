@@ -7,7 +7,7 @@ import { playSoundEffectDebounced, speakAudio } from '../../helpers/audio';
 import { translate } from '../../helpers/language';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faYinYang } from '@fortawesome/free-solid-svg-icons';
-import Progress from '../widgets/Progress';
+//import Progress from '../widgets/Progress';
 
 const defaultStyles = {
   overflow: 'hidden',
@@ -67,6 +67,14 @@ class ServiceItem extends Component {
     speakAudio(speakWords, voice);
   }
 
+  mouseClick = () => {
+    const e = this.props.serviceItem
+    const baseUrl = this.props.settings.baseUrl;
+    const url = encodeURI(`${baseUrl}extinfo.cgi?type=2&host=${e.host_name}&service=${e.description}`);
+    const win = window.open(url, '_blank');
+    win.focus();
+  }
+
   render() {
 
     const e = this.props.serviceItem; // clean this up
@@ -77,7 +85,7 @@ class ServiceItem extends Component {
 
     return (
       
-      <div style={{ ...defaultStyles }} className={`ServiceItem`}>
+      <div style={{ ...defaultStyles }} className={`ServiceItem`} onClick={this.mouseClick}>
         <div className={`ServiceItemBorder ${serviceBorderClass(e.status)}`}>
           <div style={{ float: 'right', textAlign: 'right' }}>
             {isSoft && <span className="softIcon color-yellow"><FontAwesomeIcon icon={faYinYang} spin /></span>}
@@ -111,7 +119,7 @@ class ServiceItem extends Component {
             Comment: <span className="comment-color">({this.props.comment_author}): {formatDateTimeAgo(this.props.comment_entry_time)} ago - {this.props.comment}</span>
           </div>}
 
-          <Progress seconds={secondsToNextCheck} color={serviceTextClass(e.status)}></Progress>
+          {/*<Progress seconds={secondsToNextCheck} color={serviceTextClass(e.status)}></Progress>*/}
         
         </div>
 

@@ -1,18 +1,20 @@
 /*eslint array-callback-return: "off"*/
 import React, { Component } from 'react';
 import HostItems from './hosts/HostItems.jsx';
+import HostFilters from './hosts/HostFilters.jsx';
 import ServiceItems from './services/ServiceItems.jsx';
-import AlertItems from './alerts/AlertItems.jsx';
-import { prettyDateTime } from '../helpers/moment';
+import ServiceFilters from './services/ServiceFilters.jsx';
+import AlertSection from './alerts/AlertSection.jsx';
 import { translate } from '../helpers/language';
 import { cleanDemoDataHostlist, cleanDemoDataServicelist } from '../helpers/nagiostv';
 import { convertHostObjectToArray, convertServiceObjectToArray } from '../helpers/nagiostv';
 import Flynn from './Flynn/Flynn.jsx';
+import CustomLogo from './widgets/CustomLogo.jsx';
 import Settings from './Settings.jsx';
-import Checkbox from './widgets/Checkbox.jsx';
-import HowManyEmoji from './widgets/HowManyEmoji.jsx';
-import HistoryChart from './widgets/HistoryChart.jsx';
+//import HowManyEmoji from './widgets/HowManyEmoji.jsx';
 import Demo from './Demo.jsx';
+import Clock from './widgets/Clock.jsx';
+import NavBottomBar from './widgets/NavBottomBar.jsx';
 // css
 import './Base.css';
 import './animation.css';
@@ -31,10 +33,10 @@ class Base extends Component {
   useFakeSampleData = false;
 
   state = {
-    showSettings: false,
+    currentPage: 'dashboard',
 
-    currentVersion: 33,
-    currentVersionString: '0.4.2',
+    currentVersion: 46,
+    currentVersionString: '0.5.3',
     latestVersion: 0,
     latestVersionString: '',
     lastVersionCheckTime: 0,
@@ -72,11 +74,12 @@ class Base extends Component {
 
     hideFilters: true,
     
-    // settings (defaults are set here also)
+    // user settings (defaults are set here also)
     titleString: 'NagiosTV',
     baseUrl: '/nagios/cgi-bin/',
     versionCheckDays: 1,
     alertDaysBack: 30,
+    alertHoursBack: 24,
     alertMaxItems: 1000,
 
     hideServicePending: false,
@@ -86,6 +89,7 @@ class Base extends Component {
     hideServiceAcked: false,
     hideServiceScheduled: false,
     hideServiceFlapping: false,
+    hideServiceSoft: false,
 
     serviceGroup: '',
     serviceSortOrder: 'newest',
@@ -96,24 +100,32 @@ class Base extends Component {
     hideHostAcked: false,
     hideHostScheduled: false,
     hideHostFlapping: false,
+    hideHostSoft: false,
 
     hideHistory: false,
     hideHistoryTitle: false,
     hideHistoryChart: false,
+    hideAlertSoft: false,
 
     hostGroup: 'public',
     hostSortOrder: 'newest',
 
     language: 'English',
+    locale: 'en',
+    dateFormat: 'llll',
+    clockDateFormat: 'll',
+    clockTimeFormat: 'LTS',
     
     isDemoMode: false,
 
     // fun stuff
+    customLogoEnabled: false,
+    customLogoUrl: './sample-image/resedit.png',
     flynnEnabled: false,
     flynnConcernedAt: 1,
-    flynnAngryAt: 4,
-    flynnBloodyAt: 8,
-    flynnCssScale: '0.8',
+    flynnAngryAt: 2,
+    flynnBloodyAt: 4,
+    flynnCssScale: '1',
     showEmoji: false,
     speakItems: false,
     speakItemsVoice: '',
@@ -138,6 +150,7 @@ class Base extends Component {
     'hideServiceAcked',
     'hideServiceScheduled',
     'hideServiceFlapping',
+    'hideServiceSoft',
 
     'serviceGroup',
     'serviceSortOrder',
@@ -148,18 +161,26 @@ class Base extends Component {
     'hideHostAcked',
     'hideHostScheduled',
     'hideHostFlapping',
+    'hideHostSoft',
 
     'hideHistory',
     'hideHistoryTitle',
     'hideHistoryChart',
+    'hideAlertSoft',
 
     'hostGroup',
     'hostSortOrder',
     
     'versionCheckDays',
     'language',
+    'locale',
+    'dateFormat',
+    'clockDateFormat',
+    'clockTimeFormat',
 
     // fun stuff
+    'customLogoEnabled',
+    'customLogoUrl',
     'flynnEnabled',
     'flynnConcernedAt',
     'flynnAngryAt',
@@ -177,12 +198,12 @@ class Base extends Component {
   constructor(props) {
     super(props);
 
-    // Bind functions
+    // Bind functions (move these to named arrow functons)
     this.updateStateFromSettings = this.updateStateFromSettings.bind(this);
     this.handleSelectChange = this.handleSelectChange.bind(this);
-    this.toggleSettings = this.toggleSettings.bind(this);
-
+    
     // turn on demo mode if ?demo=true or we are hosting on nagiostv.com
+    // demo mode uses fake data and rotates through a couple of alerts as an example
     const urlParams = new URLSearchParams(window.location.search);
     const isDemoMode = urlParams.get('demo') === 'true' || window.location.hostname === 'nagiostv.com';
     this.state.isDemoMode = isDemoMode;
@@ -196,7 +217,11 @@ class Base extends Component {
     // Load Remote Settings - then it calls the loadCookie routine
     this.getRemoteSettings();
     
-    // fetch the initial data immediately
+    // fetch the initial data immediately. well, after 1 second
+    // Fetch Host data
+    // Fetch Service data
+    // If Alert History is visible, fetch Alert data
+    // Fetch Comment data
     setTimeout(() => {
       this.fetchHostData();
       this.fetchServiceData();
@@ -231,23 +256,23 @@ class Base extends Component {
           this.versionCheck();
           // version check - run every n days
           const intervalTime = versionCheckDays * 24 * 60 * 60 * 1000;
+          // console.log('Checking on intervalTime', intervalTime);
           // safety check that interval > 1hr
           if (intervalTime !== 0 && intervalTime > (60 * 60 * 1000)) {
             setInterval(() => {
               // inside the interval we check again if the user disabled the check
               if (this.state.versionCheckDays > 0) {
-                // add a 10s debounce on the version check to try and prevent the runaway
-                _.debounce(this.versionCheck(), 10000);
+                this.versionCheck();
               }
             }, intervalTime);
           } else {
-            console.log('Invalid versionCheckDays. Not starting check interval.');
+            console.log('intervalTime not yet an hour, not re-running check.', intervalTime);
           }
+        } else {
+          console.log('Invalid versionCheckDays. Not starting version check interval.', versionCheckDays);
         }
       }, 30000);
     } // if isDemoMode === false
-
-    //this.toggleSettings(); //open settings box by default (for local development)
 
   }
 
@@ -265,7 +290,12 @@ class Base extends Component {
   getRemoteSettings() {
     const url = 'client-settings.json?v=' + new Date().getTime();
 
-    $.ajax({url}).done((myJson, textStatus, jqXHR) => {
+    $.ajax({
+      method: "GET",
+      url,
+      dataType: "json",
+      timeout: 10 * 1000
+    }).done((myJson, textStatus, jqXHR) => {
 
       // test that return data is json
       if (jqXHR.getResponseHeader('content-type').indexOf('application/json') === -1) {
@@ -277,9 +307,12 @@ class Base extends Component {
 
       // Got good server settings
       console.log('Found server default settings client-settings.json - Loading default settings:', myJson);
-      // load them
-      this.settingsFields.forEach(setting => this.updateIfExist(myJson, setting));
-      this.setState({ isRemoteSettingsLoaded: true });
+
+      // save settings to state
+      this.updateStateFromSettings({
+        ...myJson,
+        isRemoteSettingsLoaded: true
+      });
 
       this.getCookie();
 
@@ -313,8 +346,12 @@ class Base extends Component {
     }
     if (cookieObject) {
       console.log('Found cookie. Loading settings:', cookieObject);
-      this.settingsFields.forEach(setting => this.updateIfExist(cookieObject, setting));
-      this.setState({ isCookieLoaded: true });
+      
+      // save settings to state
+      this.updateStateFromSettings({
+        ...cookieObject,
+        isCookieLoaded: true
+      });
     }
 
     this.setState({ isDoneLoading: true });
@@ -402,7 +439,12 @@ class Base extends Component {
     }
     //console.log('Requesting Service Data: ' + url);
 
-    $.ajax({url}).done((myJson, textStatus, jqXHR) => {
+    $.ajax({
+      method: "GET",
+      url,
+      dataType: "json",
+      timeout: (this.state.fetchFrequency - 2) * 1000
+    }).done((myJson, textStatus, jqXHR) => {
 
       // test that return data is json
       if (jqXHR.getResponseHeader('content-type').indexOf('application/json') === -1) {
@@ -448,12 +490,9 @@ class Base extends Component {
       }
 
     }).fail((jqXHR, textStatus, errorThrown) => {
-      console.log('fetchServiceData() ajax fail');
-      console.log(jqXHR, textStatus, errorThrown);
-      this.setState({
-        servicelistError: true,
-        servicelistErrorMessage: 'ERROR: ' + jqXHR.status +  ' ' + errorThrown + ' - ' + url
-      });
+      
+      this.handleFetchFail(jqXHR, textStatus, errorThrown, url, 'servicelistError', 'servicelistErrorMessage');
+    
     });
   }
 
@@ -471,7 +510,12 @@ class Base extends Component {
       url = this.state.baseUrl + 'statusjson.cgi?query=hostlist&details=true' + hostgroup;
     }
 
-    $.ajax({url}).done((myJson, textStatus, jqXHR) => {
+    $.ajax({
+      method: "GET",
+      url,
+      dataType: "json",
+      timeout: (this.state.fetchFrequency - 2) * 1000
+    }).done((myJson, textStatus, jqXHR) => {
 
       // test that return data is json
       if (jqXHR.getResponseHeader('content-type').indexOf('application/json') === -1) {
@@ -517,10 +561,9 @@ class Base extends Component {
       }
 
     }).fail((jqXHR, textStatus, errorThrown) => {
-      this.setState({
-        hostlistError: true,
-        hostlistErrorMessage: 'ERROR: ' + jqXHR.status +  ' ' + errorThrown + ' - ' + url
-      });
+
+      this.handleFetchFail(jqXHR, textStatus, errorThrown, url, 'hostlistError', 'hostlistErrorMessage');
+
     });
   }
 
@@ -539,7 +582,12 @@ class Base extends Component {
       url = `${this.state.baseUrl}archivejson.cgi?query=alertlist${hostgroup}&starttime=-${starttime}&endtime=%2B0`;
     }
 
-    $.ajax({url}).done((myJson, textStatus, jqXHR) => {
+    $.ajax({
+      method: "GET",
+      url,
+      dataType: "json",
+      timeout: (this.state.fetchAlertFrequency - 2) * 1000
+    }).done((myJson, textStatus, jqXHR) => {
 
       // test that return data is json
       if (jqXHR.getResponseHeader('content-type').indexOf('application/json') === -1) {
@@ -571,10 +619,9 @@ class Base extends Component {
       });
 
     }).fail((jqXHR, textStatus, errorThrown) => {
-      this.setState({
-        alertlistError: true,
-        alertlistErrorMessage: 'ERROR: ' + jqXHR.status +  ' ' + errorThrown + ' - ' + url
-      });
+      
+      this.handleFetchFail(jqXHR, textStatus, errorThrown, url, 'alertlistError', 'alertlistErrorMessage');
+
     });
   }
 
@@ -586,7 +633,12 @@ class Base extends Component {
 
     const url = this.state.baseUrl + 'statusjson.cgi?query=commentlist&details=true' + hostgroup;
 
-    $.ajax({url}).done((myJson, textStatus, jqXHR) => {
+    $.ajax({
+      method: "GET",
+      url,
+      dataType: "json",
+      timeout: 10 * 1000
+    }).done((myJson, textStatus, jqXHR) => {
 
       // test that return data is json
       if (jqXHR.getResponseHeader('content-type').indexOf('application/json') === -1) {
@@ -608,11 +660,26 @@ class Base extends Component {
       });
 
     }).fail((jqXHR, textStatus, errorThrown) => {
-      this.setState({
-        commentlistError: true,
-        commentlistErrorMessage: 'ERROR: ' + jqXHR.status +  ' ' + errorThrown + ' - ' + url
-      });
+      
+      this.handleFetchFail(jqXHR, textStatus, errorThrown, url, 'commentlistError', 'commentlistErrorMessage');
+
     });
+  }
+
+  handleFetchFail(jqXHR, textStatus, errorThrown, url, errorBooleanVariableName, errorMessageVariableName) {
+    if (jqXHR.status === 0) {
+      // CONNECTION REFUSED
+      this.setState({
+        [errorBooleanVariableName]: true,
+        [errorMessageVariableName]: 'ERROR: CONNECTION REFUSED to ' + url
+      });
+    } else {  
+      // UNKNOWN (TODO: add more errors here)
+      this.setState({
+        [errorBooleanVariableName]: true,
+        [errorMessageVariableName]: 'ERROR: ' + jqXHR.status +  ' ' + errorThrown + ' - ' + url
+      });
+    }
   }
 
   /****************************************************************************
@@ -626,14 +693,8 @@ class Base extends Component {
   }
 
   showSettings() {
-    this.setState({ showSettings: true });
+    this.setState({ currentPage: 'settings' });
   }
-
-  hideSettings() {
-    this.setState({ showSettings: false });
-  }
-
-  
 
   /****************************************************************************
    *
@@ -641,7 +702,7 @@ class Base extends Component {
    *
    ***************************************************************************/
 
-  handleCheckboxChange = (propName, dataType) => (event) => {
+  handleCheckboxChange = (event, propName, dataType) => {
     // console.log('handleCheckboxChange Base.jsx');
     // console.log(propName, dataType);
     // console.log('event.target', event.target);
@@ -684,23 +745,11 @@ class Base extends Component {
     });
   }
 
-  // this is used by the cookie function to update state just for items we find
-  updateIfExist(cookieObject, prop) {
-    if (cookieObject.hasOwnProperty(prop)) {
-      //console.log('setting state on ' + prop +' to ', cookieObject[prop]);
-      this.setState({ [prop]: cookieObject[prop] });
-    }
-  }
-
   // this is a function we pass down to the settings component to allow it to modify state here at Base.jsx
   updateStateFromSettings(settingsObject) {
     this.setState({
       ...settingsObject
     });
-  }
-
-  toggleSettings() {
-    this.refs.settings.toggle();
   }
 
   saveCookie() {
@@ -722,6 +771,7 @@ class Base extends Component {
     const settingsObject = {};
     this.settingsFields.forEach(field => settingsObject[field] = this.state[field]);
 
+    
     // count how many items in each of the service states
     let howManyServices = 0;
     let howManyServicePending = 0;
@@ -731,6 +781,7 @@ class Base extends Component {
     let howManyServiceAcked = 0;
     let howManyServiceScheduled = 0;
     let howManyServiceFlapping = 0;
+    let howManyServiceSoft = 0;
 
     if (this.state.servicelist) {
       Object.keys(this.state.servicelist).forEach((host) => {
@@ -757,6 +808,9 @@ class Base extends Component {
           if (this.state.servicelist[host][service].is_flapping) {
             howManyServiceFlapping++;
           }
+          if (this.state.servicelist[host][service].state_type === 0) {
+            howManyServiceSoft++;
+          }
         });
       });
     }
@@ -770,6 +824,7 @@ class Base extends Component {
     let howManyHostAcked = 0;
     let howManyHostScheduled = 0;
     let howManyHostFlapping = 0;
+    let howManyHostSoft = 0;
 
     if (this.state.hostlist) {
       Object.keys(this.state.hostlist).forEach((host) => {
@@ -792,6 +847,9 @@ class Base extends Component {
         if (this.state.hostlist[host].is_flapping) {
           howManyHostFlapping++;
         }
+        if (this.state.hostlist[host].state_type === 0) {
+          howManyHostSoft++;
+        }
       });
     }
 
@@ -808,76 +866,69 @@ class Base extends Component {
     return (
       <div className="Base">
 
-        {/* settings */}
-
-        <Settings
-          ref="settings"
-          baseUrl={this.state.baseUrl}
-          baseUrlChanged={this.baseUrlChanged.bind(this)}
-          settings={settingsObject}
-          settingsFields={this.settingsFields}
-          updateStateFromSettings={this.updateStateFromSettings}
-          isCookieLoaded={this.state.isCookieLoaded}
-        />
-
-        {/* flynn */}
-
-        {this.state.flynnEnabled && <div className="FlynnWrapper">
-          <Flynn
-            howManyDown={howManyHostAndServicesDown}
-            flynnConcernedAt={this.state.flynnConcernedAt}
-            flynnAngryAt={this.state.flynnAngryAt}
-            flynnBloodyAt={this.state.flynnBloodyAt}
-            flynnCssScale={this.state.flynnCssScale}
-          />
-        </div>}
-
         {/* header */}
 
         <div className="HeaderArea">
-          <div className="ApplicationName">{this.state.titleString}</div>
+
+          <div className="header-right-float">
+
+            {/* sound */}
+            {(this.state.playSoundEffects || this.state.speakItems) && <div className="sound-icon"><FontAwesomeIcon icon={faVolumeUp} /></div>}
+
+            {/* clock */}
+            <Clock
+              locale={this.state.locale}
+              clockDateFormat={this.state.clockDateFormat}
+              clockTimeFormat={this.state.clockTimeFormat}
+            />
+
+            {/* flynn */}
+            {this.state.flynnEnabled &&
+              <Flynn
+                howManyDown={howManyHostAndServicesDown}
+                flynnConcernedAt={this.state.flynnConcernedAt}
+                flynnAngryAt={this.state.flynnAngryAt}
+                flynnBloodyAt={this.state.flynnBloodyAt}
+                flynnCssScale={this.state.flynnCssScale}
+              />
+            }
+
+            {/* custom logo */}
+            {this.state.customLogoEnabled &&
+              <CustomLogo
+                settings={settingsObject}
+              />
+            }
+          </div>
+
+          <div className="header-application-name">{this.state.titleString}</div>
+
+          {/* show the polling time */}
           {/*<span style={{ marginLeft: '20px' }} className=""><FontAwesomeIcon icon={faYinYang} spin /> 15s</span>*/}
-          {(this.state.playSoundEffects || this.state.speakItems) && <span style={{ position: 'relative', top: '-1px', marginLeft: '10px', color: '#aaa' }} className=""><FontAwesomeIcon icon={faVolumeUp} /></span>}
         </div>
 
         {/* footer */}
+        
+        <NavBottomBar
+          hideFilters={this.state.hideFilters}
+          hideHistoryChart={this.state.hideHistoryChart}
+          updateStateFromSettings={this.updateStateFromSettings}
+          currentPage={this.state.currentPage}
+          hostlistError={this.state.hostlistError}
 
-        <div className="FooterArea">
+          currentVersion={this.state.currentVersion}
+          currentVersionString={this.state.currentVersionString}
+          latestVersion={this.state.latestVersion}
+          latestVersionString={this.state.latestVersionString}
 
-          {/* left */}
-          <div className="FooterAreaLeft">
-            <Checkbox
-              className="Checkbox warning"
-              textClassName="uppercase-first display-inline-block"
-              handleCheckboxChange={this.handleCheckboxChange}
-              stateName={'hideFilters'}
-              defaultChecked={!this.state.hideFilters}
-              howManyText={translate('show filters', language)}
-            />
-          </div>
-
-          {/* right */}
-          <div className="FooterAreaRight uppercase-first">
-            <span style={{ cursor: 'pointer' }} onClick={this.toggleSettings}>{translate('settings', language)}</span>
-          </div>
-
-          {/* middle */}
-          <div className="FooterAreaMiddle">
-            <span className="FooterAreaMiddleUpdate uppercase-first display-inline-block">{translate('last update', language)}: <span className="color-orange">{prettyDateTime(this.state.servicelistLastUpdate)}</span></span>
-            &nbsp;&nbsp;
-            <span>NagiosTV <span className="color-orange">v{this.state.currentVersionString}</span></span>
-            {this.state.latestVersion > this.state.currentVersion && <span> <span className="update-available"><a target="_blank" rel="noopener noreferrer" href="https://github.com/chriscareycode/nagiostv-react/releases">NagiosTV v{this.state.latestVersionString} available</a></span></span>}
-          </div>
-        </div>
+        />
 
         {/* spacer to counteract the floating header */}
 
-        <div style={{ height: '50px' }}>
+        <div style={{ height: '55px' }}>
         </div>
 
-        {!settingsLoaded && <div>Settings are not loaded yet</div>}
-
-        {/* Demo */}
+        {/* Demo mode logic is inside this component */}
 
         {this.state.isDemoMode && <Demo
           hostlist={this.state.hostlist}
@@ -887,243 +938,168 @@ class Base extends Component {
           updateStateFromSettings={this.updateStateFromSettings}
         />}
 
-        {/* hosts */}
+        {/* wrapper around the main content */}
+        <div className="main-content">
 
-        {settingsLoaded && <div className="service-summary color-orange">
-          
-          <span className="service-summary-title">
-            <strong>{howManyHosts}</strong> {howManyHosts.length === 1 ? translate('host', language) : translate('hosts', language)}{' '}
-               
-            {howManyHostDown > 0 && <span className="summary-label summary-label-red uppercase">{howManyHostDown} {translate('down', language)}</span>}
-            {howManyHostUnreachable > 0 && <span className="summary-label summary-label-red uppercase">{howManyHostUnreachable} {translate('unreachable', language)}</span>}
-            {howManyHostPending > 0 && <span className="summary-label summary-label-gray uppercase">{howManyHostPending} {translate('pending', language)}</span>}
-            {howManyHostAcked > 0 && <span className="summary-label summary-label-green uppercase">{howManyHostAcked} {translate('acked', language)}</span>}
-            {howManyHostScheduled > 0 && <span className="summary-label summary-label-green uppercase">{howManyHostScheduled} {translate('scheduled', language)}</span>}
-            {howManyHostFlapping > 0 && <span className="summary-label summary-label-orange uppercase">{howManyHostFlapping} {translate('flapping', language)}</span>}
-            
-            {this.state.showEmoji && <HowManyEmoji
-              howMany={howManyHosts}
-              howManyWarning={0}
-              howManyCritical={howManyHostDown}
-              howManyDown={this.state.hostProblemsArray.length}
-            />}
-          </span>
+          {!settingsLoaded && <div>Settings are not loaded yet</div>}
 
-          {!this.state.hideFilters && <div className="service-hide-problems">
+          {/* settings */}
 
-            <select value={this.state.hostSortOrder} varname={'hostSortOrder'} onChange={this.handleSelectChange}>
-              <option value="newest">{translate('newest first', language)}</option>
-              <option value="oldest">{translate('oldest first', language)}</option>
-            </select>
-
-            <Checkbox className="Checkbox down uppercase"
-              handleCheckboxChange={this.handleCheckboxChange}
-              stateName={'hideHostDown'}
-              defaultChecked={!this.state.hideHostDown}
-              howMany={howManyHostDown}
-              howManyText={translate('down', language)}
-            />
-
-            <Checkbox className="Checkbox unreachable uppercase"
-              handleCheckboxChange={this.handleCheckboxChange}
-              stateName={'hideHostUnreachable'}
-              defaultChecked={!this.state.hideHostUnreachable}
-              howMany={howManyHostUnreachable}
-              howManyText={translate('unreachable', language)}
-            />
-
-            <Checkbox className="Checkbox pending uppercase"
-              handleCheckboxChange={this.handleCheckboxChange}
-              stateName={'hideHostPending'}
-              defaultChecked={!this.state.hideHostPending}
-              howMany={howManyHostPending}
-              howManyText={translate('pending', language)}
-            />
-
-            <Checkbox className="Checkbox acked uppercase"
-              handleCheckboxChange={this.handleCheckboxChange}
-              stateName={'hideHostAcked'}
-              defaultChecked={!this.state.hideHostAcked}
-              howMany={howManyHostAcked}
-              howManyText={translate('acked', language)}
-            />
-
-            <Checkbox className="Checkbox scheduled uppercase"
-              handleCheckboxChange={this.handleCheckboxChange}
-              stateName={'hideHostScheduled'}
-              defaultChecked={!this.state.hideHostScheduled}
-              howMany={howManyHostScheduled}
-              howManyText={translate('scheduled', language)}
-            />
-
-            <Checkbox className="Checkbox flapping uppercase"
-              handleCheckboxChange={this.handleCheckboxChange}
-              stateName={'hideHostFlapping'}
-              defaultChecked={!this.state.hideHostFlapping}
-              howMany={howManyHostFlapping}
-              howManyText={translate('flapping', language)}
-            />
-
-          </div>}
-
-        </div>}
-        
-        {(!this.state.isDemoMode && this.state.hostlistError) && <div className="margin-top-10 border-red ServiceItemError"><span role="img" aria-label="error">⚠️</span> {this.state.hostlistErrorMessage}</div>}
-
-        <HostItems
-          hostProblemsArray={this.state.hostProblemsArray}
-          commentlist={this.state.commentlist}
-          settings={settingsObject}
-
-          howManyHosts={howManyHosts}
-          howManyHostUp={howManyHostUp}
-          howManyHostDown={howManyHostDown}
-          howManyHostUnreachable={howManyHostUnreachable}
-          howManyHostPending={howManyHostPending}
-          howManyHostAcked={howManyHostAcked}
-          howManyHostScheduled={howManyHostScheduled}
-          howManyHostFlapping={howManyHostFlapping}
-        />
-
-        {/* services */}
-
-        {settingsLoaded && <div className="service-summary color-orange" style={{ marginTop: '12px'}}>
-          
-          <span className="service-summary-title">
-            <strong>{howManyServices}</strong> {howManyServices === 1 ? translate('service', language) : translate('services', language)}{' '}
-
-            {howManyServiceCritical > 0 && <span className="summary-label summary-label-red uppercase">{howManyServiceCritical} {translate('critical', language)}</span>}
-            {howManyServiceWarning > 0 && <span className="summary-label summary-label-yellow uppercase">{howManyServiceWarning} {translate('warning', language)}</span>}
-            {howManyServicePending > 0 && <span className="summary-label summary-label-gray uppercase">{howManyServicePending} {translate('pending', language)}</span>}
-            {howManyServiceUnknown > 0 && <span className="summary-label summary-label-orange uppercase">{howManyServiceUnknown} {translate('unknown', language)}</span>}
-            {howManyServiceAcked > 0 && <span className="summary-label summary-label-green uppercase">{howManyServiceAcked} {translate('acked', language)}</span>}
-            {howManyServiceScheduled > 0 && <span className="summary-label summary-label-green uppercase">{howManyServiceScheduled} {translate('scheduled', language)}</span>}
-            {howManyServiceFlapping > 0 && <span className="summary-label summary-label-orange uppercase">{howManyServiceFlapping} {translate('flapping', language)}</span>}
-
-            {this.state.showEmoji && <HowManyEmoji
-              howMany={howManyServices}
-              howManyWarning={howManyServiceWarning}
-              howManyCritical={howManyServiceCritical}
-              howManyDown={this.state.serviceProblemsArray.length}
-            />}
-          </span>
-
-          {!this.state.hideFilters && <div className="service-hide-problems">
-
-            <select value={this.state.serviceSortOrder} varname={'serviceSortOrder'} onChange={this.handleSelectChange}>
-              <option value="newest">{translate('newest first', language)}</option>
-              <option value="oldest">{translate('oldest first', language)}</option>
-            </select>
-
-            <Checkbox className="Checkbox critical uppercase"
-              handleCheckboxChange={this.handleCheckboxChange}
-              stateName={'hideServiceCritical'}
-              defaultChecked={!this.state.hideServiceCritical}
-              howMany={howManyServiceCritical}
-              howManyText={translate('critical', language)}
-            />
-
-            <Checkbox className="Checkbox warning uppercase"
-              handleCheckboxChange={this.handleCheckboxChange}
-              stateName={'hideServiceWarning'}
-              defaultChecked={!this.state.hideServiceWarning}
-              howMany={howManyServiceWarning}
-              howManyText={translate('warning', language)}
-            />
-
-            <Checkbox className="Checkbox unknown uppercase"
-              handleCheckboxChange={this.handleCheckboxChange}
-              stateName={'hideServiceUnknown'}
-              defaultChecked={!this.state.hideServiceUnknown}
-              howMany={howManyServiceUnknown}
-              howManyText={translate('unknown', language)}
-            />
-
-            <Checkbox className="Checkbox pending uppercase"
-              handleCheckboxChange={this.handleCheckboxChange}
-              stateName={'hideServicePending'}
-              defaultChecked={!this.state.hideServicePending}
-              howMany={howManyServicePending}
-              howManyText={translate('pending', language)}
-            />
-
-            <Checkbox className="Checkbox acked uppercase"
-              handleCheckboxChange={this.handleCheckboxChange}
-              stateName={'hideServiceAcked'}
-              defaultChecked={!this.state.hideServiceAcked}
-              howMany={howManyServiceAcked}
-              howManyText={translate('acked', language)}
-            />
-
-            <Checkbox className="Checkbox scheduled uppercase"
-              handleCheckboxChange={this.handleCheckboxChange}
-              stateName={'hideServiceScheduled'}
-              defaultChecked={!this.state.hideServiceScheduled}
-              howMany={howManyServiceScheduled}
-              howManyText={translate('scheduled', language)}
-            />
-
-            <Checkbox className="Checkbox flapping uppercase"
-              handleCheckboxChange={this.handleCheckboxChange}
-              stateName={'hideServiceFlapping'}
-              defaultChecked={!this.state.hideServiceFlapping}
-              howMany={howManyServiceFlapping}
-              howManyText={translate('flapping', language)}
-            />
-
-          </div>}
-
-        </div>}
-        
-        {(!this.state.isDemoMode && this.state.servicelistError) && <div className="margin-top-10 border-red ServiceItemError"><span role="img" aria-label="error">⚠️</span> {this.state.servicelistErrorMessage}</div>}
-
-        <ServiceItems
-          serviceProblemsArray={this.state.serviceProblemsArray}
-          commentlist={this.state.commentlist}
-          settings={settingsObject}
-
-          howManyServices={howManyServices}
-          howManyServiceWarning={howManyServiceWarning}
-          howManyServicePending={howManyServicePending}
-          howManyServiceUnknown={howManyServiceUnknown}
-          howManyServiceCritical={howManyServiceCritical}
-          howManyServiceAcked={howManyServiceAcked}
-          howManyServiceScheduled={howManyServiceScheduled}
-          howManyServiceFlapping={howManyServiceFlapping}
-        />
-        
-        {/* history (alertlist) */}
-
-        {!this.state.hideHistory && <div>
-
-          {!this.state.hideHistoryTitle && <div className="history-summary color-orange margin-top-10">
-            <span className="service-summary-title">
-            <span className="uppercase-first display-inline-block">{translate('history', language)}</span>: <strong>{this.state.alertlistCount}</strong> {translate('alerts in the past', language)} <strong>{this.state.alertDaysBack}</strong> {translate('days', language)}
-              {this.state.alertlistCount > this.state.alertlist.length && <span className="font-size-0-6"> ({translate('trimming at', language)} {this.state.alertMaxItems})</span>}
-            </span>
-          </div>}
-
-          {!this.state.hideHistoryChart && <HistoryChart
-            alertlist={this.state.alertlist}
-            alertDaysBack={this.state.alertDaysBack} 
-            alertlistLastUpdate={this.state.alertlistLastUpdate}
+          {this.state.currentPage === 'settings' && <Settings
+            ref="settings"
+            baseUrl={this.state.baseUrl}
+            baseUrlChanged={this.baseUrlChanged.bind(this)}
+            settings={settingsObject}
+            settingsFields={this.settingsFields}
+            updateStateFromSettings={this.updateStateFromSettings}
+            isCookieLoaded={this.state.isCookieLoaded}
+            currentPage={this.state.currentPage}
+            hostlistError={this.state.hostlistError}
           />}
 
-          {this.state.alertlistError && <div className="margin-top-10 border-red color-yellow ServiceItemError"><span role="img" aria-label="error">⚠️</span> {this.state.alertlistErrorMessage}</div>}
+          {this.state.currentPage === 'dashboard' && <div className="dashboard-area">
 
-          {!this.state.alertlistError && this.state.alertlist.length === 0 && <div className="margin-top-10 color-green AllOkItem">
-            No alerts
-          </div>}
+            {/* hosts */}
 
-          <AlertItems
-            items={this.state.alertlist}
-            showEmoji={this.state.showEmoji}
-            settings={settingsObject}
-          />
+            {settingsLoaded && <div className="service-summary">
+            
+              <span className="service-summary-title">
+                Monitoring <strong>{howManyHosts}</strong> {howManyHosts.length === 1 ? translate('host', language) : translate('hosts', language)}{' '}
+              </span>
 
-        </div>}
+              {/* host filters */}
+              <HostFilters
+                hideFilters={this.state.hideFilters}
+                hostSortOrder={this.state.hostSortOrder}
+                handleSelectChange={this.handleSelectChange}
+                handleCheckboxChange={this.handleCheckboxChange}
+                howManyHostDown={howManyHostDown}
+                howManyHostUnreachable={howManyHostUnreachable}
+                howManyHostPending={howManyHostPending}
+                howManyHostAcked={howManyHostAcked}
+                howManyHostScheduled={howManyHostScheduled}
+                howManyHostFlapping={howManyHostFlapping}
+                howManyHostSoft={howManyHostSoft}
+                language={language}
+                settingsObject={settingsObject}
+              />
 
-        <br />
+              {/* how many down emoji */}
+              {/*
+              {this.state.showEmoji && <HowManyEmoji
+                howMany={howManyHosts}
+                howManyWarning={0}
+                howManyCritical={howManyHostDown}
+                howManyDown={this.state.hostProblemsArray.length}
+              />}
+              */}
+
+            </div>}
+
+            {/** Show Error Message - If we are not in demo mode and there is a hostlist error (ajax fetching) then show the error message here */}
+            {(!this.state.isDemoMode && this.state.hostlistError) && <div className="margin-top-10 border-red ServiceItemError"><span role="img" aria-label="error">⚠️</span> {this.state.hostlistErrorMessage}</div>}
+
+            {/* hostitems list */}
+            <HostItems
+              hostProblemsArray={this.state.hostProblemsArray}
+              commentlist={this.state.commentlist}
+              settings={settingsObject}
+              howManyHosts={howManyHosts}
+              howManyHostUp={howManyHostUp}
+              howManyHostDown={howManyHostDown}
+              howManyHostUnreachable={howManyHostUnreachable}
+              howManyHostPending={howManyHostPending}
+              howManyHostAcked={howManyHostAcked}
+              howManyHostScheduled={howManyHostScheduled}
+              howManyHostFlapping={howManyHostFlapping}
+              isDemoMode={this.state.isDemoMode}
+              hostlistError={this.state.hostlistError}
+            />
+
+            {/* services */}
+
+            {settingsLoaded && <div className="service-summary">
+              
+              <span className="service-summary-title">
+                Monitoring <strong>{howManyServices}</strong> {howManyServices === 1 ? translate('service', language) : translate('services', language)}{' '}
+              </span>
+
+              {/* service filters */}
+              <ServiceFilters
+                hideFilters={this.state.hideFilters}
+                serviceSortOrder={this.state.serviceSortOrder}
+                handleSelectChange={this.handleSelectChange}
+                handleCheckboxChange={this.handleCheckboxChange}
+                howManyServices={howManyServices}
+                howManyServiceWarning={howManyServiceWarning}
+                howManyServicePending={howManyServicePending}
+                howManyServiceUnknown={howManyServiceUnknown}
+                howManyServiceCritical={howManyServiceCritical}
+                howManyServiceAcked={howManyServiceAcked}
+                howManyServiceScheduled={howManyServiceScheduled}
+                howManyServiceFlapping={howManyServiceFlapping}
+                howManyServiceSoft={howManyServiceSoft}
+                language={language}
+                settingsObject={settingsObject}
+              />
+
+              {/* how many down emoji */}
+              {/*
+              {this.state.showEmoji && <HowManyEmoji
+                howMany={howManyServices}
+                howManyWarning={howManyServiceWarning}
+                howManyCritical={howManyServiceCritical}
+                howManyDown={this.state.serviceProblemsArray.length}
+              />}
+              */}
+
+            </div>}
+            
+            {/** Show Error Message - If we are not in demo mode and there is a servicelist error (ajax fetching) then show the error message here */}
+            {(!this.state.isDemoMode && this.state.servicelistError) && <div className="margin-top-10 border-red ServiceItemError"><span role="img" aria-label="error">⚠️</span> {this.state.servicelistErrorMessage}</div>}
+
+            <ServiceItems
+              serviceProblemsArray={this.state.serviceProblemsArray}
+              commentlist={this.state.commentlist}
+              settings={settingsObject}
+
+              howManyServices={howManyServices}
+              howManyServiceWarning={howManyServiceWarning}
+              howManyServicePending={howManyServicePending}
+              howManyServiceUnknown={howManyServiceUnknown}
+              howManyServiceCritical={howManyServiceCritical}
+              howManyServiceAcked={howManyServiceAcked}
+              howManyServiceScheduled={howManyServiceScheduled}
+              howManyServiceFlapping={howManyServiceFlapping}
+              servicelistError={this.state.servicelistError}
+            />
+            
+            {/* Alert History Section */}
+
+            {(settingsLoaded && !this.state.hideHistory) && <AlertSection
+              alertlist={this.state.alertlist}
+              alertlistCount={this.state.alertlistCount}
+              alertlistLastUpdate={this.state.alertlistLastUpdate}
+              alertlistError={this.state.alertlistError}
+              alertlistErrorMessage={this.state.alertlistErrorMessage}
+              alertDaysBack={this.state.alertDaysBack}
+              alertHoursBack={this.state.alertHoursBack}
+              alertMaxItems={this.state.alertMaxItems}
+              showEmoji={this.state.showEmoji}
+              settingsObject={settingsObject}
+              settingsFields={this.settingsFields}
+              language={this.state.language}
+              hideHistoryChart={this.state.hideHistoryChart}
+              hideHistoryTitle={this.state.hideHistoryTitle}
+              hideAlertSoft={this.state.hideAlertSoft}
+              handleCheckboxChange={this.handleCheckboxChange}
+              hideFilters={this.state.hideFilters}
+            />}
+
+          </div>} {/* end dashboard-area */}
+        
+        </div> {/* endwrapper around the main content */}
+
         <br />
         <br />
         

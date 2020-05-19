@@ -7,7 +7,7 @@ import { translate } from '../../helpers/language';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faYinYang } from '@fortawesome/free-solid-svg-icons';
 import { playSoundEffectDebounced, speakAudio } from '../../helpers/audio';
-import Progress from '../widgets/Progress';
+//import Progress from '../widgets/Progress';
 
 const defaultStyles = {
   overflow: 'hidden',
@@ -66,6 +66,14 @@ class HostItem extends Component {
     speakAudio(speakWords, voice);
   }
 
+  mouseClick = () => {
+    const e = this.props.hostItem
+    const baseUrl = this.props.settings.baseUrl;
+    const url = encodeURI(`${baseUrl}extinfo.cgi?type=1&host=${e.name}`);
+    const win = window.open(url, '_blank');
+    win.focus();
+  }
+
   render() {
 
     const e = this.props.hostItem; // clean this up
@@ -75,7 +83,7 @@ class HostItem extends Component {
     const nowTime = new Date().getTime();
 
     return (
-      <div style={{ ...defaultStyles }} className={`HostItem`}>
+      <div style={{ ...defaultStyles }} className={`HostItem`} onClick={this.mouseClick}>
         <div className={`HostItemBorder ${hostBorderClass(e.status)}`}>
           <div style={{ float: 'right', textAlign: 'right' }}>
             {isSoft && <span className="softIcon color-red"><FontAwesomeIcon icon={faYinYang} spin /></span>}
@@ -107,7 +115,8 @@ class HostItem extends Component {
             Comment: <span className="comment-color">({this.props.comment_author}): {formatDateTimeAgo(this.props.comment_entry_time)} {translate('ago', language)} - {this.props.comment}</span>
           </div>}
 
-          <Progress seconds={secondsToNextCheck} color={hostTextClass(e.status)}></Progress>
+          {/*<Progress seconds={secondsToNextCheck} color={hostTextClass(e.status)}></Progress>*/}
+
         </div>
       </div>
     );
